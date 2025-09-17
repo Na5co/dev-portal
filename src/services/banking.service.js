@@ -100,8 +100,9 @@ const reviewLoanApplication = async (identifier, decision) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  if (user.loanDetails.status !== 'pending_review') {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Loan application is not pending manual review.');
+  // An admin can only review a loan if a risk assessment has been completed AND the loan is pending manual review.
+  if (user.riskAssessment.status !== 'complete' || user.loanDetails.status !== 'pending_review') {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'This loan application is not ready for manual review. A risk assessment must be completed first.');
   }
 
   user.loanDetails.status = decision;
