@@ -75,7 +75,7 @@ const userSchema = mongoose.Schema(
     loanDetails: {
       status: {
         type: String,
-        enum: ['none', 'pending_review', 'approved', 'declined'],
+        enum: ['none', 'pending_assessment', 'pending_review', 'approved', 'declined'],
         default: 'none',
       },
       amount: {

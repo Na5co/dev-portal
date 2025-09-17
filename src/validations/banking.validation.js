@@ -88,6 +88,15 @@ const assessRisk = {
   }),
 };
 
+const getRiskAssessments = {
+  query: Joi.object().keys({
+    status: Joi.string().valid('pending', 'complete'),
+    sortBy: Joi.string(),
+    limit: Joi.number().integer(),
+    page: Joi.number().integer(),
+  }),
+};
+
 module.exports = {
   getFraudScore,
   getCreditScore,
@@ -99,4 +108,5 @@ module.exports = {
   getLoanApplications,
   updateUserProfile,
   assessRisk,
+  getRiskAssessments,
 };

@@ -74,6 +74,13 @@ router.post(
   bankingController.assessRisk
 );
 
+router
+  .route('/assessments')
+  .get(auth('manageUsers'), validate(bankingValidation.getRiskAssessments), bankingController.getRiskAssessments);
+router
+  .route('/risk-assessment/:identifier')
+  .post(auth('manageUsers'), validate(bankingValidation.assessRisk), bankingController.assessRisk);
+
 module.exports = router;
 
 /**

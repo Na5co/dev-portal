@@ -1,7 +1,7 @@
 const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const catchAsync = require('../utils/catchAsync');
-const { bankingService } = require('../services');
+const { bankingService, userService } = require('../services');
 
 const getFraudScore = catchAsync(async (req, res) => {
   const score = await bankingService.getFraudScore(req.params.identifier);
@@ -62,6 +62,13 @@ const assessRisk = catchAsync(async (req, res) => {
   res.send(assessment);
 });
 
+const getRiskAssessments = catchAsync(async (req, res) => {
+  const filter = pick(req.query, ['status']);
+  const options = pick(req.query, ['sortBy', 'limit', 'page']);
+  const result = await bankingService.getRiskAssessments(filter, options);
+  res.send(result);
+});
+
 module.exports = {
   getFraudScore,
   getCreditScore,
@@ -73,4 +80,5 @@ module.exports = {
   getLoanApplications,
   updateUserProfile,
   assessRisk,
+  getRiskAssessments,
 };

@@ -1,5 +1,7 @@
 const { User } = require('../models');
 const { userService } = require('.');
+const ApiError = require('../utils/ApiError');
+const httpStatus = require('http-status');
 
 const getFraudScore = async (identifier) => {
   const user = await userService.getUserByIdentifier(identifier);
@@ -51,41 +53,45 @@ const setCreditScore = async (identifier, score) => {
 };
 
 const applyForLoan = async (identifier, loanData) => {
-  const user = await userService.getUserByIdentifier(identifier);
+  let user = await userService.getUserByIdentifier(identifier);
   if (!user) {
-    throw new Error('User not found');
-  }
-
-  // Prerequisite check: Ensure an admin has completed the risk assessment
-  if (user.riskAssessment.status !== 'complete') {
-    throw new Error('A risk assessment must be completed by an admin before applying for a loan.');
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   if (user.loanDetails.status !== 'none' && user.loanDetails.status !== 'declined') {
-    throw new Error('User already has a pending or approved loan application.');
+    throw new ApiError(httpStatus.BAD_REQUEST, 'User already has a pending or approved loan application.');
   }
 
-  // --- Decision Logic based on saved risk assessment ---
-  const { recommendation } = user.riskAssessment;
+  // Set loan details and initial status
   user.loanDetails.amount = loanData.amount;
   user.loanDetails.purpose = loanData.purpose;
+  user.loanDetails.status = 'pending_assessment';
+  await user.save();
+
+  // Automatically run risk assessment
+  const assessmentResult = await assessRisk(identifier);
+
+  // Refetch user to get the latest state after assessment
+  user = await userService.getUserByIdentifier(identifier);
+
+  const { recommendation } = assessmentResult;
 
   if (recommendation === 'deny') {
     user.loanDetails.status = 'declined';
     await user.save();
-    return { status: 'declined', reason: 'Application declined based on prior risk assessment.' };
+    return { status: 'declined', reason: 'Application declined based on risk assessment.' };
   }
 
   if (recommendation === 'proceed_with_caution') {
     user.loanDetails.status = 'pending_review';
     await user.save();
-    return { status: 'pending_review', reason: 'Application requires manual review based on prior risk assessment.' };
+    return { status: 'pending_review', reason: 'Application requires manual review based on risk assessment.' };
   }
 
   // Recommendation is "proceed"
   user.loanDetails.status = 'approved';
   await user.save();
-  return { status: 'approved', message: 'Congratulations! Your loan has been approved based on prior risk assessment.' };
+  return { status: 'approved', message: 'Congratulations! Your loan has been approved.' };
 };
 
 const reviewLoanApplication = async (identifier, decision) => {
@@ -126,11 +132,11 @@ const updateUserProfile = async (identifier, profileData) => {
 const assessRisk = async (identifier) => {
   const user = await userService.getUserByIdentifier(identifier);
   if (!user) {
-    throw new Error('User not found');
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   if (!user.address || !user.employmentStatus || user.monthlyIncome === 0) {
-    throw new Error('User profile is incomplete. Cannot assess risk.');
+    throw new ApiError(httpStatus.BAD_REQUEST, 'User profile is incomplete. Cannot assess risk.');
   }
 
   const assessment = {
@@ -190,6 +196,11 @@ const assessRisk = async (identifier) => {
   };
 };
 
+const getRiskAssessments = async (filter, options) => {
+  const assessments = await User.paginate(filter, options);
+  return assessments;
+};
+
 module.exports = {
   getFraudScore,
   getCreditScore,
@@ -201,4 +212,5 @@ module.exports = {
   getLoanApplications,
   updateUserProfile,
   assessRisk,
+  getRiskAssessments,
 };
