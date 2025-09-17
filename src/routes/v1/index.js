@@ -3,6 +3,7 @@ const authRoute = require('./auth.route');
 const userRoute = require('./user.route');
 const docsRoute = require('./docs.route');
 const bankingRoute = require('./banking.route');
+const devRoute = require('./dev.route');
 const config = require('../../config/config');
 
 const router = express.Router();
@@ -23,6 +24,10 @@ const defaultRoutes = [
 ];
 
 const devRoutes = [
+  {
+    path: '/dev',
+    route: devRoute,
+  },
   // routes available only in development mode
   {
     path: '/docs',
