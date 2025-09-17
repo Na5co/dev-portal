@@ -211,7 +211,17 @@ const assessRisk = async (identifier) => {
 };
 
 const getRiskAssessments = async (filter, options) => {
-  const assessments = await User.paginate(filter, options);
+  // This endpoint should show all applications that require an admin's attention,
+  // either for assessment or for manual review.
+  const query = {
+    'loanDetails.status': { $in: ['pending_assessment', 'pending_review', 'approved', 'declined'] },
+  };
+
+  if (filter.status) {
+    query['loanDetails.status'] = filter.status;
+  }
+
+  const assessments = await User.paginate(query, options);
   return assessments;
 };
 

@@ -90,7 +90,7 @@ const assessRisk = {
 
 const getRiskAssessments = {
   query: Joi.object().keys({
-    status: Joi.string().valid('pending', 'complete'),
+    status: Joi.string().valid('pending_assessment', 'pending_review', 'approved', 'declined'),
     sortBy: Joi.string(),
     limit: Joi.number().integer(),
     page: Joi.number().integer(),

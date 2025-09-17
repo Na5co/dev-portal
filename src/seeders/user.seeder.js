@@ -5,10 +5,19 @@ const { User } = require('../models');
 
 const users = [
   {
-    name: 'Admin User',
+    _id: adminId,
+    name: 'Admin',
     email: 'admin@example.com',
     password: 'password1',
     role: 'admin',
+    isEmailVerified: true,
+  },
+  {
+    _id: userId,
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    password: 'password1',
+    role: 'user',
     isEmailVerified: true,
   },
   {
