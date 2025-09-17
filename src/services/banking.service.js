@@ -97,17 +97,16 @@ const applyForLoan = async (identifier, loanData) => {
 const reviewLoanApplication = async (identifier, decision) => {
   const user = await userService.getUserByIdentifier(identifier);
   if (!user) {
-    throw new Error('User not found');
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   if (user.loanDetails.status !== 'pending_review') {
-    throw new Error(`Loan application is not pending review. Current status: ${user.loanDetails.status}`);
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Loan application is not pending manual review.');
   }
 
   user.loanDetails.status = decision;
   await user.save();
-
-  return { userId: user.id, loanStatus: user.loanDetails.status };
+  return user.loanDetails;
 };
 
 const getLoanApplications = async (filter, options) => {
