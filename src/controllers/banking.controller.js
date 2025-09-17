@@ -69,6 +69,17 @@ const getRiskAssessments = catchAsync(async (req, res) => {
   res.send(result);
 });
 
+const getActiveLoans = catchAsync(async (req, res) => {
+  const options = pick(req.query, ['sortBy', 'limit', 'page']);
+  const result = await bankingService.getActiveLoans(options);
+  res.send(result);
+});
+
+const getLoanDecision = catchAsync(async (req, res) => {
+  const result = await bankingService.getLoanDecision(req.params.identifier);
+  res.send(result);
+});
+
 module.exports = {
   getFraudScore,
   getCreditScore,
@@ -81,4 +92,6 @@ module.exports = {
   updateUserProfile,
   assessRisk,
   getRiskAssessments,
+  getActiveLoans,
+  getLoanDecision,
 };

@@ -225,6 +225,28 @@ const getRiskAssessments = async (filter, options) => {
   return assessments;
 };
 
+const getActiveLoans = async (options) => {
+  const query = { 'loanDetails.status': 'approved' };
+  const activeLoans = await User.paginate(query, options);
+  return activeLoans;
+};
+
+const getLoanDecision = async (identifier) => {
+  const user = await userService.getUserByIdentifier(identifier);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const { status } = user.loanDetails;
+  const canReapply = status === 'none' || status === 'declined';
+
+  return {
+    status,
+    canReapply,
+    message: `Your loan status is: ${status}. You ${canReapply ? 'can' : 'cannot'} submit a new application at this time.`,
+  };
+};
+
 module.exports = {
   getFraudScore,
   getCreditScore,
@@ -237,4 +259,6 @@ module.exports = {
   updateUserProfile,
   assessRisk,
   getRiskAssessments,
+  getActiveLoans,
+  getLoanDecision,
 };

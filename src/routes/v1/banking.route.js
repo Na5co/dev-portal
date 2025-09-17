@@ -77,6 +77,15 @@ router.post(
 router
   .route('/assessments')
   .get(auth('manageUsers'), validate(bankingValidation.getRiskAssessments), bankingController.getRiskAssessments);
+
+router
+  .route('/loans/active')
+  .get(auth('manageUsers'), validate(bankingValidation.getActiveLoans), bankingController.getActiveLoans);
+
+router
+  .route('/loan-decision/:identifier')
+  .get(auth(), validate(bankingValidation.getLoanDecision), bankingController.getLoanDecision);
+
 router
   .route('/risk-assessment/:identifier')
   .post(auth('manageUsers'), validate(bankingValidation.assessRisk), bankingController.assessRisk);
