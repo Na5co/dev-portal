@@ -1,79 +1,53 @@
 const express = require('express');
 const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
+const authorizeBanking = require('../../middlewares/authorizeBanking');
 const { bankingValidation } = require('../../validations');
 const { bankingController } = require('../../controllers');
 
 const router = express.Router();
 
-router.get(
-  '/fraud-detection/:identifier',
-  auth(),
-  validate(bankingValidation.getFraudScore),
-  bankingController.getFraudScore
-);
-router.get(
-  '/credit-score/:identifier',
-  auth(),
-  validate(bankingValidation.getCreditScore),
-  bankingController.getCreditScore
-);
-router.get(
-  '/transaction-history/:identifier',
-  auth(),
-  validate(bankingValidation.getTransactionHistory),
-  bankingController.getTransactionHistory
-);
+router
+  .route('/fraud-score/:identifier')
+  .get(auth(), authorizeBanking, validate(bankingValidation.getFraudScore), bankingController.getFraudScore);
 
-router.patch(
-  '/fraud-detection/:identifier',
-  auth('manageUsers'),
-  validate(bankingValidation.setFraudStatus),
-  bankingController.setFraudStatus
-);
+router
+  .route('/credit-score/:identifier')
+  .get(auth(), authorizeBanking, validate(bankingValidation.getCreditScore), bankingController.getCreditScore)
+  .post(auth('manageUsers'), authorizeBanking, validate(bankingValidation.setCreditScore), bankingController.setCreditScore);
 
-router.patch(
-  '/credit-score/:identifier',
-  auth('manageUsers'),
-  validate(bankingValidation.setCreditScore),
-  bankingController.setCreditScore
-);
+router
+  .route('/transaction-history/:identifier')
+  .get(auth(), authorizeBanking, validate(bankingValidation.getTransactionHistory), bankingController.getTransactionHistory);
 
-router.post(
-  '/loan-application/:identifier',
-  auth(),
-  validate(bankingValidation.applyForLoan),
-  bankingController.applyForLoan
-);
+router
+  .route('/fraud-status/:identifier')
+  .post(auth('manageUsers'), authorizeBanking, validate(bankingValidation.setFraudStatus), bankingController.setFraudStatus);
 
-router.patch(
-  '/loan-application/:identifier/review',
-  auth('manageUsers'),
-  validate(bankingValidation.reviewLoanApplication),
-  bankingController.reviewLoanApplication
-);
+router
+  .route('/loan-application/:identifier')
+  .post(auth(), authorizeBanking, validate(bankingValidation.applyForLoan), bankingController.applyForLoan);
 
-router.get(
-  '/loan-applications',
-  auth('manageUsers'),
-  validate(bankingValidation.getLoanApplications),
-  bankingController.getLoanApplications
-);
+router
+  .route('/loan-application/:identifier/review')
+  .patch(auth('manageUsers'), authorizeBanking, validate(bankingValidation.reviewLoanApplication), bankingController.reviewLoanApplication);
 
-router.put(
-  '/users/:identifier/profile',
-  auth(),
-  validate(bankingValidation.updateUserProfile),
-  bankingController.updateUserProfile
-);
+router
+  .route('/profile/:identifier')
+  .put(auth(), authorizeBanking, validate(bankingValidation.updateUserProfile), bankingController.updateUserProfile);
 
-router.post(
-  '/users/:identifier/assess-risk',
-  auth('manageUsers'),
-  validate(bankingValidation.assessRisk),
-  bankingController.assessRisk
-);
+router
+  .route('/loan-decision/:identifier')
+  .get(auth(), authorizeBanking, validate(bankingValidation.getLoanDecision), bankingController.getLoanDecision);
 
+router
+  .route('/risk-assessment/:identifier')
+  .post(auth('manageUsers'), authorizeBanking, validate(bankingValidation.assessRisk), bankingController.assessRisk);
+
+// Admin-only bulk routes (do not need authorizeBanking middleware)
+router
+  .route('/loan-applications')
+  .get(auth('getLoanApplications'), validate(bankingValidation.getLoanApplications), bankingController.getLoanApplications);
 router
   .route('/assessments')
   .get(auth('manageUsers'), validate(bankingValidation.getRiskAssessments), bankingController.getRiskAssessments);
@@ -81,14 +55,6 @@ router
 router
   .route('/loans/active')
   .get(auth('manageUsers'), validate(bankingValidation.getActiveLoans), bankingController.getActiveLoans);
-
-router
-  .route('/loan-decision/:identifier')
-  .get(auth(), validate(bankingValidation.getLoanDecision), bankingController.getLoanDecision);
-
-router
-  .route('/risk-assessment/:identifier')
-  .post(auth('manageUsers'), validate(bankingValidation.assessRisk), bankingController.assessRisk);
 
 module.exports = router;
 
