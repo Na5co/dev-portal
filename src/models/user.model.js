@@ -87,15 +87,9 @@ const userSchema = mongoose.Schema(
       },
     },
     riskAssessment: {
-      status: {
-        type: String,
-        enum: ['pending', 'complete'],
-        default: 'pending',
-      },
       recommendation: {
         type: String,
         enum: ['none', 'proceed', 'proceed_with_caution', 'deny'],
-        default: 'none',
       },
       assessedDate: {
         type: Date,

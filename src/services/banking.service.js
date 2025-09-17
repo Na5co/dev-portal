@@ -53,45 +53,31 @@ const setCreditScore = async (identifier, score) => {
 };
 
 const applyForLoan = async (identifier, loanData) => {
-  let user = await userService.getUserByIdentifier(identifier);
+  const user = await userService.getUserByIdentifier(identifier);
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
 
+  // A user can only apply if they don't have an active or pending application.
   if (user.loanDetails.status !== 'none' && user.loanDetails.status !== 'declined') {
     throw new ApiError(httpStatus.BAD_REQUEST, 'User already has a pending or approved loan application.');
   }
 
-  // Set loan details and initial status
+  // A user must have a complete profile before applying for a loan.
+  if (!user.address || !user.employmentStatus || user.monthlyIncome === 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'User profile is incomplete. Please submit your financial profile before applying for a loan.'
+    );
+  }
+
+  // Set loan details and mark it as pending assessment.
   user.loanDetails.amount = loanData.amount;
   user.loanDetails.purpose = loanData.purpose;
-  user.loanDetails.status = 'pending_assessment';
+  user.loanDetails.status = 'pending_assessment'; // Now an admin needs to run the assessment.
   await user.save();
 
-  // Automatically run risk assessment
-  const assessmentResult = await assessRisk(identifier);
-
-  // Refetch user to get the latest state after assessment
-  user = await userService.getUserByIdentifier(identifier);
-
-  const { recommendation } = assessmentResult;
-
-  if (recommendation === 'deny') {
-    user.loanDetails.status = 'declined';
-    await user.save();
-    return { status: 'declined', reason: 'Application declined based on risk assessment.' };
-  }
-
-  if (recommendation === 'proceed_with_caution') {
-    user.loanDetails.status = 'pending_review';
-    await user.save();
-    return { status: 'pending_review', reason: 'Application requires manual review based on risk assessment.' };
-  }
-
-  // Recommendation is "proceed"
-  user.loanDetails.status = 'approved';
-  await user.save();
-  return { status: 'approved', message: 'Congratulations! Your loan has been approved.' };
+  return { status: 'pending_assessment', message: 'Your loan application has been submitted and is pending a risk assessment.' };
 };
 
 const reviewLoanApplication = async (identifier, decision) => {
@@ -100,9 +86,19 @@ const reviewLoanApplication = async (identifier, decision) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  // An admin can only review a loan if a risk assessment has been completed AND the loan is pending manual review.
-  if (user.riskAssessment.status !== 'complete' || user.loanDetails.status !== 'pending_review') {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'This loan application is not ready for manual review. A risk assessment must be completed first.');
+  // ABSOLUTE CHECK: An admin can only review a loan if and only if:
+  // 1. A risk assessment object exists (meaning it has been completed).
+  // 2. The assessment's recommendation was "proceed_with_caution".
+  // 3. The loan's current status is "pending_review".
+  if (
+    !user.riskAssessment ||
+    user.riskAssessment.recommendation !== 'proceed_with_caution' ||
+    user.loanDetails.status !== 'pending_review'
+  ) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'This loan application cannot be manually reviewed. It has either not been assessed or the automated assessment did not require manual intervention.'
+    );
   }
 
   user.loanDetails.status = decision;
@@ -133,6 +129,11 @@ const assessRisk = async (identifier) => {
   const user = await userService.getUserByIdentifier(identifier);
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  // Check if there is a loan application to assess.
+  if (user.loanDetails.status !== 'pending_assessment') {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'No loan application is pending assessment for this user.');
   }
 
   if (!user.address || !user.employmentStatus || user.monthlyIncome === 0) {
@@ -182,16 +183,29 @@ const assessRisk = async (identifier) => {
     recommendation = 'proceed_with_caution';
   }
 
-  // Save the assessment to the user model
-  user.riskAssessment.status = 'complete';
-  user.riskAssessment.recommendation = recommendation;
-  user.riskAssessment.assessedDate = new Date();
+  // Create the assessment object on the user model
+  user.riskAssessment = {
+    recommendation,
+    assessedDate: new Date(),
+  };
+
+  // Update loan status based on assessment recommendation
+  if (recommendation === 'deny') {
+    user.loanDetails.status = 'declined';
+  } else if (recommendation === 'proceed_with_caution') {
+    user.loanDetails.status = 'pending_review';
+  } else {
+    // 'proceed'
+    user.loanDetails.status = 'approved';
+  }
+
   await user.save();
 
   return {
     userId: user.id,
     riskLevel,
     recommendation,
+    loanStatus: user.loanDetails.status,
     assessment,
   };
 };
