@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const config = require('../config/config');
 const { User } = require('../models');
+const logger = require('../config/logger');
+
+const adminId = new mongoose.Types.ObjectId();
+const userId = new mongoose.Types.ObjectId();
 
 const users = [
   {
