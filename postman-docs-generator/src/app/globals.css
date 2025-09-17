@@ -165,3 +165,73 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer base {
+  .prose {
+    h1, h2, h3, h4, h5, h6 {
+      @apply font-bold tracking-tight;
+    }
+
+    h1 {
+      @apply text-3xl mt-8 mb-4;
+    }
+
+    h2 {
+      @apply text-2xl mt-8 mb-4 border-b pb-2;
+    }
+
+    h3 {
+      @apply text-lg mt-6 mb-3;
+    }
+
+    p, ul, ol {
+      @apply text-sm leading-6 mb-4;
+    }
+
+    a {
+      @apply text-blue-600 hover:text-blue-500 font-medium;
+    }
+
+    code {
+      @apply bg-slate-100 px-1.5 py-1 rounded text-sm;
+    }
+
+    blockquote {
+      @apply border-l-4 border-slate-200 pl-4 italic text-slate-500;
+    }
+
+    ul {
+      @apply list-disc list-outside ml-4;
+    }
+
+    ol {
+      @apply list-decimal list-outside ml-4;
+    }
+
+    li {
+      @apply mb-2;
+    }
+
+    table {
+      @apply w-full my-6 text-sm border-collapse;
+    }
+
+    thead {
+      @apply bg-slate-50;
+    }
+
+    th {
+      @apply px-4 py-2 text-left font-semibold text-slate-700 border border-slate-200;
+    }
+
+    td {
+      @apply px-4 py-2 border border-slate-200;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

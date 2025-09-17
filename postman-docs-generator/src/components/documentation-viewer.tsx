@@ -5,10 +5,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ParsedCollection, ParsedItem } from '@/lib/postman-parser';
-import { getMethodColor } from '@/lib/utils';
 import { Sidebar } from '@/components/sidebar';
-import { RequestPanel } from '@/components/request-panel';
-import { RunInPostmanButton } from '@/components/run-in-postman-button';
+import { RequestItem } from './documentation/RequestItem';
+import { FolderItem } from './documentation/FolderItem';
+import { RunInPostmanCTA } from '@/components/run-in-postman-cta';
 
 interface DocumentationViewerProps {
   collection: ParsedCollection;
@@ -60,14 +60,12 @@ export function DocumentationViewer({
   const handleScrollTo = (id: string) => {
     const element = itemRefs.current.get(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      element.scrollIntoView({ behavior: 'auto', block: 'start' });
       setActiveItemId(id);
     }
   };
 
   const renderItem = (item: ParsedItem) => {
-    const isFolder = item.type === 'folder';
-
     return (
       <div
         key={item.id}
@@ -77,60 +75,19 @@ export function DocumentationViewer({
         }}
         className='py-12'
       >
-        {isFolder ? (
-          <div>
-            <h2 className='text-3xl font-bold tracking-tight text-gray-900 border-b pb-4'>
-              {item.name}
-            </h2>
-            {item.description && (
-              <div className='mt-6 prose max-w-none prose-a:text-blue-600 hover:prose-a:text-blue-500 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded'>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {item.description}
-                </ReactMarkdown>
-              </div>
-            )}
-            <div className='mt-8 space-y-8'>
-              {item.items?.map((child) => renderItem(child))}
-            </div>
-          </div>
+        {item.type === 'folder' ? (
+          <FolderItem item={item} renderItem={renderItem} />
         ) : (
-          <div>
-            <h3 className='text-2xl font-bold tracking-tight text-gray-800'>
-              {item.name}
-            </h3>
-            <div className='flex items-center gap-3 mt-4'>
-              <span
-                className={`text-sm font-semibold px-3 py-1 rounded-md ${getMethodColor(
-                  item.request?.method || 'GET'
-                )}`}
-              >
-                {item.request?.method}
-              </span>
-              <code className='text-base font-mono bg-gray-100 text-gray-800 px-3 py-1.5 rounded-md'>
-                {item.request?.url}
-              </code>
-            </div>
-            {item.description && (
-              <div className='mt-4 prose max-w-none text-gray-600 prose-a:text-blue-600 hover:prose-a:text-blue-500 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded'>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {item.description}
-                </ReactMarkdown>
-              </div>
-            )}
-            {item.request && (
-              <RequestPanel
-                request={item.request}
-                rawRequest={item.rawRequest}
-              />
-            )}
-          </div>
+          <RequestItem
+            item={item}
+          />
         )}
       </div>
     );
   };
 
   return (
-    <div className='flex h-[calc(100vh-69px)] bg-white'>
+    <div className='flex h-[calc(100vh-69px)] bg-slate-50'>
       <Sidebar
         items={collection.items}
         collectionName={collection.name}
@@ -142,25 +99,28 @@ export function DocumentationViewer({
           className='h-full'
           ref={mainContentRef}
         >
-          <div className='max-w-7xl mx-auto p-8'>
-            {postmanCollectionId && (
-              <RunInPostmanButton
-                collectionId={postmanCollectionId}
-                workspaceId={postmanWorkspaceId}
-              />
-            )}
+          <div className='max-w-7xl mx-auto p-4 sm:p-6 lg:p-8'>
             <div className='pb-8'>
-              <h1 className='text-5xl font-extrabold tracking-tight text-gray-900'>
+              <h1 className='text-4xl lg:text-5xl font-extrabold tracking-tight text-gray-900'>
                 {collection.name}
               </h1>
               {collection.description && (
-                <div className='mt-6 prose max-w-none text-gray-600 prose-a:text-blue-600 hover:prose-a:text-blue-500 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded'>
+                <div className='mt-6 prose max-w-3xl'>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {collection.description}
                   </ReactMarkdown>
                 </div>
               )}
             </div>
+            
+            {/* Prominent Run in Postman CTA */}
+            {postmanCollectionId && postmanWorkspaceId && (
+              <RunInPostmanCTA
+                collectionId={postmanCollectionId}
+                workspaceId={postmanWorkspaceId}
+                collectionName={collection.name}
+              />
+            )}
             <div>
               {collection.items.map((item) => (
                 <div

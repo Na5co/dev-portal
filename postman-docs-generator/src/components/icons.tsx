@@ -5,6 +5,7 @@ export {
   Folder,
   Code,
   ArrowRight,
+  ArrowLeft,
   Info,
   X,
   Book,
@@ -14,8 +15,10 @@ export {
   Clipboard,
   ClipboardCheck,
   Download,
+  Upload,
   FilePlus,
   SlidersHorizontal,
   CheckCircle,
   XCircle,
+  Zap,
 } from 'lucide-react';

@@ -75,241 +75,130 @@ export function RequestPanel({ request, rawRequest }: RequestPanelProps) {
   };
 
   return (
-    <div className='mt-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start'>
-      {/* Left Column for Metadata */}
-      <div className='space-y-6'>
-        {request.auth && (
-          <Card className='shadow-lg hover:shadow-xl transition-shadow rounded-xl'>
-            <CardHeader>
-              <CardTitle className='text-lg font-semibold flex items-center gap-2'>
-                <Lock
-                  className='h-5 w-5 text-gray-500'
-                  aria-hidden='true'
-                />
-                Authorization
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className='overflow-x-auto'>
-                <table className='w-full text-sm'>
-                  <tbody>
-                    <tr className='border-t'>
-                      <td className='p-2 font-mono text-gray-800 font-medium'>
-                        Type
-                      </td>
-                      <td className='p-2 font-mono text-gray-600'>
-                        {request.auth.type}
-                      </td>
-                    </tr>
-                    {Object.entries(request.auth)
-                      .filter(([key]) => key !== 'type')
-                      .map(([key, value]) => (
-                        <tr
-                          key={key}
-                          className='border-t'
-                        >
-                          <td className='p-2 font-mono text-gray-800 font-medium capitalize'>
-                            {key}
-                          </td>
-                          <td className='p-2 font-mono text-gray-600'>
-                            {String(value)}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {request.headers && request.headers.length > 0 && (
-          <Card className='shadow-lg hover:shadow-xl transition-shadow rounded-xl'>
-            <CardHeader>
-              <CardTitle className='text-lg font-semibold'>Headers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className='overflow-x-auto'>
-                <table className='w-full text-sm'>
-                  <thead className='text-left text-gray-500'>
-                    <tr>
-                      <th className='p-2 font-medium'>Key</th>
-                      <th className='p-2 font-medium'>Value</th>
-                      <th className='p-2 font-medium'>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {request.headers.map((header, idx) => (
-                      <tr
-                        key={idx}
-                        className='border-t'
-                      >
-                        <td className='p-2 font-mono text-gray-800'>
-                          {header.key}
-                        </td>
-                        <td className='p-2 font-mono text-gray-600'>
-                          {header.value}
-                        </td>
-                        <td className='p-2 text-gray-600'>
-                          {header.description}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+    <div className='bg-white border border-slate-200 rounded-lg shadow-sm'>
+      <div className='p-4 border-b border-slate-200 flex justify-between items-center'>
+        <h4 className='text-lg font-semibold text-slate-900 flex items-center gap-2'>
+          <Code
+            className='h-5 w-5 text-blue-500'
+            aria-hidden='true'
+          />
+          Request & Response
+        </h4>
+        <div className='flex items-center gap-1 bg-slate-100 p-1 rounded-lg'>
+          {languages.map((lang) => (
+            <button
+              key={lang.id}
+              onClick={() => setActiveLanguage(lang.id)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                activeLanguage === lang.id
+                  ? 'bg-white shadow-sm text-slate-900'
+                  : 'text-slate-600 hover:bg-white/70'
+              }`}
+            >
+              {lang.name}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Right Column for Payloads */}
-      <div className='bg-gray-900 rounded-xl shadow-2xl lg:sticky lg:top-24'>
-        <div className='p-4 border-b border-gray-700 flex justify-between items-center'>
-          <h4 className='text-lg font-semibold text-white flex items-center gap-2'>
-            <Code
-              className='h-5 w-5 text-blue-400'
-              aria-hidden='true'
-            />
-            Request & Response
-          </h4>
-          <div className='flex items-center gap-1 bg-gray-800/60 p-1 rounded-lg'>
-            {languages.map((lang) => (
-              <button
-                key={lang.id}
-                onClick={() => setActiveLanguage(lang.id)}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                  activeLanguage === lang.id
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-gray-400 hover:bg-gray-700/50'
-                }`}
-                style={
-                  activeLanguage === lang.id
-                    ? {
-                        backgroundColor: 'hsl(var(--accent))',
-                        color: 'hsl(var(--accent-foreground))',
-                      }
-                    : {}
-                }
-              >
-                {lang.name}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className='p-4'>
+        <Accordion
+          type='multiple'
+          className='w-full space-y-2'
+          defaultValue={['code-snippet']}
+        >
+          <AccordionItem
+            value='code-snippet'
+            className='border-none'
+          >
+            <div className='bg-slate-50 rounded-lg border border-slate-200'>
+              <AccordionTrigger className='hover:no-underline p-3 text-slate-700 hover:text-slate-900 rounded-md'>
+                <span className='text-base font-semibold'>Code Snippet</span>
+              </AccordionTrigger>
+              <AccordionContent className='p-1'>
+                <div className='relative mx-2 mb-2'>
+                  <Button
+                    size='icon'
+                    variant='ghost'
+                    className='absolute top-2 right-2 h-8 w-8 text-slate-500 hover:bg-slate-200 hover:text-slate-900'
+                    onClick={handleCopy}
+                  >
+                    {hasCopied ? (
+                      <ClipboardCheck className='h-4 w-4' />
+                    ) : (
+                      <Clipboard className='h-4 w-4' />
+                    )}
+                  </Button>
+                  <div className='bg-slate-800 text-slate-100 rounded-lg p-4 overflow-x-auto'>
+                    <pre className='text-sm'>
+                      <code>{isLoadingSnippet ? 'Loading...' : snippet}</code>
+                    </pre>
+                  </div>
+                </div>
+              </AccordionContent>
+            </div>
+          </AccordionItem>
 
-        <ScrollArea className='max-h-[calc(100vh-200px)]'>
-          <div className='p-4 space-y-6'>
-            <Accordion
-              type='single'
-              collapsible
-              className='w-full'
+          {request.examples && request.examples.length > 0 && (
+            <AccordionItem
+              value='response-examples'
+              className='border-none'
             >
-              <AccordionItem
-                value='item-1'
-                className='border-none'
-              >
-                <AccordionTrigger className='hover:no-underline p-2 text-gray-300 hover:text-white rounded-md hover:bg-gray-800'>
-                  <span className='text-base font-semibold'>Code Snippet</span>
+              <div className='bg-slate-50 rounded-lg border border-slate-200'>
+                <AccordionTrigger className='hover:no-underline p-3 text-slate-700 hover:text-slate-900 rounded-md'>
+                  <span className='text-base font-semibold'>
+                    Response Examples
+                  </span>
                 </AccordionTrigger>
-                <AccordionContent>
-                  <div className='relative mt-2'>
-                    <Button
-                      size='icon'
-                      variant='ghost'
-                      className='absolute top-2 right-2 h-8 w-8 text-gray-400 hover:bg-gray-700 hover:text-white'
-                      onClick={handleCopy}
+                <AccordionContent className='p-1'>
+                  <div className='mx-2 mb-2'>
+                    <Accordion
+                      type='multiple'
+                      className='w-full space-y-2'
                     >
-                      {hasCopied ? (
-                        <ClipboardCheck className='h-4 w-4' />
-                      ) : (
-                        <Clipboard className='h-4 w-4' />
-                      )}
-                    </Button>
-                    <div className='bg-gray-800 rounded-lg p-4 max-h-96 overflow-auto'>
-                      <pre className='text-sm text-gray-200'>
-                        <code>{isLoadingSnippet ? 'Loading...' : snippet}</code>
-                      </pre>
-                    </div>
+                      {request.examples.map((example, idx) => (
+                        <AccordionItem
+                          key={idx}
+                          value={`response-${idx}`}
+                          className='border-none'
+                        >
+                          <div className='bg-white rounded-lg border border-slate-200'>
+                            <AccordionTrigger className='hover:no-underline p-3 text-slate-700 hover:text-slate-900 rounded-md'>
+                              <div className='w-full flex justify-between items-center'>
+                                <span className='text-sm font-medium flex items-center gap-2'>
+                                  <ArrowRight className='h-4 w-4 text-green-500' />
+                                  {example.name}
+                                </span>
+                                <Badge
+                                  className={`font-semibold ${
+                                    example.code < 300
+                                      ? 'bg-green-100 text-green-800 border-green-200'
+                                      : 'bg-red-100 text-red-800 border-red-200'
+                                  }`}
+                                >
+                                  {example.code}
+                                </Badge>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className='p-1'>
+                              {example.body && (
+                                <div className='bg-slate-800 text-slate-100 rounded-lg p-4 mx-2 mb-2 overflow-x-auto'>
+                                  <pre className='text-sm'>
+                                    <code>{formatJson(example.body)}</code>
+                                  </pre>
+                                </div>
+                              )}
+                            </AccordionContent>
+                          </div>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
                   </div>
                 </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-
-            {request.body &&
-              (request.body.raw ||
-                (request.body.formdata &&
-                  request.body.formdata.length > 0)) && (
-                <div>
-                  <h5 className='text-base font-semibold text-gray-300 mb-2'>
-                    Request Body
-                  </h5>
-                  {request.body.raw && (
-                    <div className='bg-gray-800 rounded-lg p-4 max-h-96 overflow-auto'>
-                      <pre className='text-sm text-gray-200'>
-                        <code>{formatJson(request.body.raw)}</code>
-                      </pre>
-                    </div>
-                  )}
-                  {request.body.formdata && (
-                    <div className='space-y-2'>
-                      {request.body.formdata.map((param, idx) => (
-                        <div
-                          key={idx}
-                          className='flex items-center justify-between p-3 bg-gray-700 rounded-lg border border-gray-600'
-                        >
-                          <span className='font-mono text-sm font-medium text-gray-200'>
-                            {param.key}
-                          </span>
-                          <span className='font-mono text-sm text-gray-400 bg-gray-800 px-2 py-1 rounded border border-gray-600'>
-                            {param.value}
-                          </span>
-                          <Badge
-                            variant='outline'
-                            className='border-gray-500 text-gray-300'
-                          >
-                            {param.type}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-            {request.examples && request.examples.length > 0 && (
-              <div className='space-y-4'>
-                {request.examples.map((example, idx) => (
-                  <div key={idx}>
-                    <h5 className='text-base font-semibold text-gray-300 mb-2 flex items-center justify-between'>
-                      <span>
-                        <ArrowRight className='inline h-4 w-4 mr-2 text-green-400' />
-                        Response Example:{' '}
-                        <span className='font-light'>{example.name}</span>
-                      </span>
-                      <Badge
-                        className={`font-semibold ${
-                          example.code < 300
-                            ? 'bg-green-900 text-green-300 border-green-700'
-                            : 'bg-red-900 text-red-300 border-red-700'
-                        }`}
-                      >
-                        {example.code}
-                      </Badge>
-                    </h5>
-                    {example.body && (
-                      <div className='bg-gray-800 rounded-lg p-4 max-h-80 overflow-auto'>
-                        <pre className='text-sm text-gray-200'>
-                          <code>{formatJson(example.body)}</code>
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                ))}
               </div>
-            )}
-          </div>
-        </ScrollArea>
+            </AccordionItem>
+          )}
+        </Accordion>
       </div>
     </div>
   );

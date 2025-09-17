@@ -2,25 +2,40 @@
 
 import { memo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, FilePlus, SlidersHorizontal } from '@/components/icons';
+import {
+  Upload,
+  FilePlus,
+  SlidersHorizontal,
+  Book,
+  Zap,
+  FileText,
+} from '@/components/icons';
 import Image from 'next/image';
 
 interface HeaderProps {
   logo: string | null;
+  activeView: 'documentation' | 'flows';
+  onNavigate: (view: 'documentation' | 'flows') => void;
   onCustomizeClick: () => void;
-  onExportClick: () => void;
+  onDeployClick: () => void;
+  isDeploying: boolean;
+  onViewDeployedClick: () => void;
   onResetClick: () => void;
 }
 
 export const Header = memo(function Header({
   logo,
+  activeView,
+  onNavigate,
   onCustomizeClick,
-  onExportClick,
+  onDeployClick,
+  isDeploying,
+  onViewDeployedClick,
   onResetClick,
 }: HeaderProps) {
   return (
     <header className='border-b bg-white/70 backdrop-blur-sm sticky top-0 z-50 h-[69px]'>
-      <div className='flex items-center justify-between px-6'>
+      <div className='flex items-center justify-between px-6 h-full'>
         <div className='flex items-center gap-3'>
           {logo ? (
             <Image
@@ -35,31 +50,68 @@ export const Header = memo(function Header({
               <span className='text-white text-lg'>📚</span>
             </div>
           )}
-          <h1 className='text-lg font-bold text-gray-900'>API Documentation</h1>
+        </div>
+        <div className='flex items-center gap-2 bg-slate-100 p-1 rounded-lg'>
+          <Button
+            onClick={() => onNavigate('documentation')}
+            variant={activeView === 'documentation' ? 'default' : 'ghost'}
+            size='sm'
+            className={`transition-all ${
+              activeView === 'documentation'
+                ? 'bg-white shadow-sm text-slate-900'
+                : 'text-slate-600'
+            }`}
+          >
+            <Book className='h-4 w-4 mr-2' />
+            Documentation
+          </Button>
+          <Button
+            onClick={() => onNavigate('flows')}
+            variant={activeView === 'flows' ? 'default' : 'ghost'}
+            size='sm'
+            className={`transition-all ${
+              activeView === 'flows'
+                ? 'bg-white shadow-sm text-slate-900'
+                : 'text-slate-600'
+            }`}
+          >
+            <Zap className='h-4 w-4 mr-2' />
+            Flows
+          </Button>
         </div>
         <div className='flex items-center gap-2'>
           <Button
             onClick={onCustomizeClick}
             variant='outline'
             size='sm'
-            className='text-gray-600'
+            className='text-slate-600'
           >
             <SlidersHorizontal className='h-4 w-4 mr-2' />
             Customize
           </Button>
           <Button
-            onClick={onExportClick}
+            onClick={onViewDeployedClick}
+            variant='outline'
+            size='sm'
+            className='text-slate-600'
+          >
+            <FileText className='h-4 w-4 mr-2' />
+            Deployed
+          </Button>
+          <Button
+            onClick={onDeployClick}
+            disabled={isDeploying}
             variant='default'
             className='shadow-sm bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] hover:bg-[hsl(var(--accent)/0.9)]'
             size='sm'
           >
-            <Download className='h-4 w-4 mr-2' />
-            Export
+            <Upload className='h-4 w-4 mr-2' />
+            {isDeploying ? 'Deploying...' : 'Deploy'}
           </Button>
           <Button
             onClick={onResetClick}
             variant='outline'
-            className='shadow-sm text-gray-600'
+            className='shadow-sm text-slate-600'
             size='sm'
           >
             <FilePlus className='h-4 w-4 mr-2' />

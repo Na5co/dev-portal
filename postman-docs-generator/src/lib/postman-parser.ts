@@ -173,17 +173,20 @@ function parseRequest(request: Request, responses: Response[]): ParsedRequest {
 }
 
 function parseAuth(auth: RequestAuth): ParsedAuth | undefined {
-  const authJson = auth.toJSON();
+  const authJson = auth.toJSON() as any;
   if (!authJson || !authJson.type) return undefined;
 
   const parsedAuth: ParsedAuth = {
     type: authJson.type,
   };
 
-  if (authJson[authJson.type]) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (authJson[authJson.type] as any[]).forEach((param) => {
-      parsedAuth[param.key] = param.value;
+  // Safely access auth parameters
+  const authParams = authJson[authJson.type];
+  if (authParams && Array.isArray(authParams)) {
+    authParams.forEach((param: any) => {
+      if (param && param.key) {
+        parsedAuth[param.key] = param.value;
+      }
     });
   }
 

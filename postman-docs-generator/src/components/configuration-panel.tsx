@@ -1,12 +1,12 @@
 'use client';
 
-import { memo, useState } from 'react';
+import { useEffect, useState, ChangeEvent, memo, FC } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { X, CheckCircle, XCircle } from '@/components/icons';
-import { CustomizationState } from '@/app/page';
+import { CustomizationState } from '@/lib/types';
 import {
   Select,
   SelectContent,
@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { isValidPostmanId } from './run-in-postman-button';
+import { parsePostmanUid, postmanIdRegex } from '@/components/run-in-postman-button';
+import { fontOptions } from '@/lib/constants';
 
 interface ConfigurationPanelProps {
   customization: CustomizationState;
@@ -23,76 +24,39 @@ interface ConfigurationPanelProps {
   onClose: () => void;
 }
 
-export const ConfigurationPanel = memo(function ConfigurationPanel({
+const readFileAsDataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+export const ConfigurationPanel: FC<ConfigurationPanelProps> = memo(({
   customization,
   onCustomizationChange,
   onClose,
-}: ConfigurationPanelProps) {
-  const [isPostmanIdValid, setIsPostmanIdValid] = useState<boolean | null>(
-    null
-  );
-  const [isWorkspaceIdValid, setIsWorkspaceIdValid] = useState<boolean | null>(
-    null
-  );
+}) => {
+  const [isPostmanIdValid, setIsPostmanIdValid] = useState<boolean | null>(null);
+  const [isWorkspaceIdValid, setIsWorkspaceIdValid] = useState<boolean | null>(null);
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    e: ChangeEvent<HTMLInputElement>,
+    field: 'logo' | 'favicon'
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onCustomizationChange({
-          ...customization,
-          logo: reader.result as string,
-        });
-      };
-      reader.readAsDataURL(file);
+      const dataUrl = await readFileAsDataURL(file);
+      onCustomizationChange({ ...customization, [field]: dataUrl });
     }
   };
 
-  const handleFaviconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onCustomizationChange({
-          ...customization,
-          favicon: reader.result as string,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onCustomizationChange({ ...customization, accentColor: e.target.value });
-  };
-
-  const handleFontChange = (value: keyof typeof fontOptions) => {
-    onCustomizationChange({ ...customization, font: value });
-  };
-
-  const handleFooterChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onCustomizationChange({ ...customization, footer: e.target.value });
-  };
-
-  const handlePostmanIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const id = e.target.value;
-    onCustomizationChange({ ...customization, postmanCollectionId: id });
-    if (id) {
-      setIsPostmanIdValid(isValidPostmanId(id));
-    } else {
-      setIsPostmanIdValid(null);
-    }
-  };
-
-  const handleWorkspaceIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const id = e.target.value;
-    onCustomizationChange({ ...customization, postmanWorkspaceId: id });
-    if (id) {
-      setIsWorkspaceIdValid(isValidPostmanId(id));
-    } else {
-      setIsWorkspaceIdValid(null);
-    }
+  const handleChange = (
+    field: keyof CustomizationState,
+    value: string | keyof typeof fontOptions
+  ) => {
+    onCustomizationChange({ ...customization, [field]: value });
   };
 
   const resetToDefaults = () => {
@@ -104,15 +68,10 @@ export const ConfigurationPanel = memo(function ConfigurationPanel({
       footer: '',
       postmanCollectionId: null,
       postmanWorkspaceId: null,
+      postmanUserId: null,
     });
     setIsPostmanIdValid(null);
     setIsWorkspaceIdValid(null);
-  };
-
-  const fontOptions = {
-    inter: 'Inter (Sans-serif)',
-    'roboto-mono': 'Roboto Mono (Monospace)',
-    'source-serif': 'Source Serif (Serif)',
   };
 
   return (
@@ -122,15 +81,10 @@ export const ConfigurationPanel = memo(function ConfigurationPanel({
     >
       <div className='flex items-center justify-between mb-6'>
         <h3 className='text-xl font-bold'>Customize</h3>
-        <Button
-          variant='ghost'
-          size='icon'
-          onClick={onClose}
-        >
+        <Button variant='ghost' size='icon' onClick={onClose}>
           <X className='h-5 w-5' />
         </Button>
       </div>
-
       <div className='space-y-6'>
         <div>
           <Label htmlFor='logo-upload'>Logo</Label>
@@ -138,7 +92,7 @@ export const ConfigurationPanel = memo(function ConfigurationPanel({
             id='logo-upload'
             type='file'
             accept='image/*'
-            onChange={handleLogoChange}
+            onChange={(e) => handleFileChange(e, 'logo')}
             className='mt-2'
           />
         </div>
@@ -148,7 +102,7 @@ export const ConfigurationPanel = memo(function ConfigurationPanel({
             id='favicon-upload'
             type='file'
             accept='image/png, image/svg+xml, image/x-icon'
-            onChange={handleFaviconChange}
+            onChange={(e) => handleFileChange(e, 'favicon')}
             className='mt-2'
           />
         </div>
@@ -158,7 +112,7 @@ export const ConfigurationPanel = memo(function ConfigurationPanel({
             id='accent-color'
             type='color'
             value={customization.accentColor}
-            onChange={handleColorChange}
+            onChange={(e) => handleChange('accentColor', e.target.value)}
             className='mt-2'
           />
         </div>
@@ -166,20 +120,14 @@ export const ConfigurationPanel = memo(function ConfigurationPanel({
           <Label htmlFor='typography-select'>Typography</Label>
           <Select
             value={customization.font}
-            onValueChange={handleFontChange}
+            onValueChange={(value) => handleChange('font', value)}
           >
-            <SelectTrigger
-              id='typography-select'
-              className='mt-2'
-            >
+            <SelectTrigger id='typography-select' className='mt-2'>
               <SelectValue placeholder='Select a font' />
             </SelectTrigger>
             <SelectContent>
               {Object.entries(fontOptions).map(([value, label]) => (
-                <SelectItem
-                  key={value}
-                  value={value}
-                >
+                <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>
               ))}
@@ -188,54 +136,62 @@ export const ConfigurationPanel = memo(function ConfigurationPanel({
         </div>
         <div className='space-y-4'>
           <div>
-            <Label htmlFor='postman-id'>Run in Postman Collection ID</Label>
+            <Label htmlFor='collectionId'>Run in Postman Collection UID</Label>
             <div className='relative mt-2'>
               <Input
-                id='postman-id'
+                id='collectionId'
                 type='text'
+                placeholder='e.g., 12345678-abcd-efgh-ijkl-1234567890ab'
                 value={customization.postmanCollectionId || ''}
-                onChange={handlePostmanIdChange}
-                placeholder='e.g., 12345678-abcd-efgh-ijkl-mnopqrstuvwx'
-                className={isPostmanIdValid === false ? 'border-red-500' : ''}
+                onChange={(e) =>
+                  handleChange('postmanCollectionId', e.target.value)
+                }
               />
-              {isPostmanIdValid === true && (
-                <CheckCircle className='absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-green-500' />
-              )}
-              {isPostmanIdValid === false && (
-                <XCircle className='absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-red-500' />
-              )}
+              {(() => {
+                if (!customization.postmanCollectionId) return null;
+                const parsed = parsePostmanUid(
+                  customization.postmanCollectionId
+                );
+                if (!parsed) {
+                  return (
+                    <p className='text-xs text-red-500 mt-1'>
+                      Invalid Postman Collection ID or UID format.
+                    </p>
+                  );
+                }
+                if (!parsed.userId) {
+                  return (
+                    <p className='text-xs text-orange-500 mt-1'>
+                      A User ID is required for the "Run in Postman"
+                      button. Please provide the full UID.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
-            {isPostmanIdValid === false && (
-              <p className='text-xs text-red-500 mt-1'>
-                Invalid Postman collection ID format.
-              </p>
-            )}
           </div>
           <div>
-            <Label htmlFor='postman-workspace-id'>
-              Postman Workspace ID (Optional)
-            </Label>
+            <Label htmlFor='workspaceId'>Postman Workspace ID</Label>
             <div className='relative mt-2'>
               <Input
-                id='postman-workspace-id'
+                id='workspaceId'
                 type='text'
-                value={customization.postmanWorkspaceId || ''}
-                onChange={handleWorkspaceIdChange}
                 placeholder='e.g., 12345678-abcd-efgh-ijkl-mnopqrstuvwx'
-                className={isWorkspaceIdValid === false ? 'border-red-500' : ''}
+                value={customization.postmanWorkspaceId || ''}
+                onChange={(e) =>
+                  handleChange('postmanWorkspaceId', e.target.value)
+                }
               />
-              {isWorkspaceIdValid === true && (
-                <CheckCircle className='absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-green-500' />
-              )}
-              {isWorkspaceIdValid === false && (
-                <XCircle className='absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-red-500' />
-              )}
+              {customization.postmanWorkspaceId &&
+                !postmanIdRegex.test(
+                  customization.postmanWorkspaceId
+                ) && (
+                  <p className='text-xs text-red-500 mt-1'>
+                    Invalid Postman Workspace ID format.
+                  </p>
+                )}
             </div>
-            {isWorkspaceIdValid === false && (
-              <p className='text-xs text-red-500 mt-1'>
-                Invalid Postman workspace ID format.
-              </p>
-            )}
           </div>
         </div>
         <div>
@@ -243,7 +199,7 @@ export const ConfigurationPanel = memo(function ConfigurationPanel({
           <Textarea
             id='footer-content'
             value={customization.footer}
-            onChange={handleFooterChange}
+            onChange={(e) => handleChange('footer', e.target.value)}
             className='mt-2 h-24'
             placeholder='© 2024 Your Company Name'
           />

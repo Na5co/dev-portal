@@ -1,53 +1,35 @@
 'use client';
 
-import { useState, useRef, CSSProperties, useEffect } from 'react';
+import { useRef, CSSProperties, useEffect, useState } from 'react';
 import { DocumentationViewer } from '@/components/documentation-viewer';
-import { parsePostmanCollection, ParsedCollection } from '@/lib/postman-parser';
 import { ConfigurationPanel } from '@/components/configuration-panel';
+import { DeployedPagesPanel } from '@/components/deployed-pages-panel';
 import { generateColorTheme } from '@/lib/colors';
 import { LandingPage } from '@/components/landing-page';
 import { Header } from '@/components/header';
-
-export interface CustomizationState {
-  logo: string | null;
-  accentColor: string;
-  favicon: string | null;
-  font: 'inter' | 'roboto-mono' | 'source-serif';
-  footer: string;
-  postmanCollectionId: string | null;
-  postmanWorkspaceId: string | null;
-}
-
-const fontLinks: Record<CustomizationState['font'], string> = {
-  inter:
-    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap',
-  'roboto-mono':
-    'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap',
-  'source-serif':
-    'https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700;800;900&display=swap',
-};
-
-const fontFamilies: Record<CustomizationState['font'], string> = {
-  inter: "'Inter', sans-serif",
-  'roboto-mono': "'Roboto Mono', monospace",
-  'source-serif': "'Source Serif 4', serif",
-};
+import { fontLinks, fontFamilies } from '@/lib/constants';
+import { useAppState } from '@/lib/hooks/useAppState';
+import { Flows } from '@/components/Flows';
+// Removed export functionality 
 
 export default function Home() {
-  const [collection, setCollection] = useState<ParsedCollection | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    collection,
+    isLoading,
+    error,
+    customization,
+    setCustomization,
+    handleFileSelect,
+    handleReset,
+  } = useAppState();
   const documentationRef = useRef<HTMLDivElement>(null);
   const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
-  const [customization, setCustomization] = useState<CustomizationState>({
-    logo: null,
-    accentColor: '#000000',
-    favicon: null,
-    font: 'inter',
-    footer: '',
-    postmanCollectionId: null,
-    postmanWorkspaceId: null,
-  });
+  const [isDeployedPanelOpen, setIsDeployedPanelOpen] = useState(false);
+  const [activeView, setActiveView] = useState<'documentation' | 'flows'>(
+    'documentation'
+  );
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deploymentResult, setDeploymentResult] = useState<{ success: boolean; url?: string; message: string } | null>(null);
 
   useEffect(() => {
     if (customization.favicon) {
@@ -69,113 +51,51 @@ export default function Home() {
     }
   }, [customization.favicon, customization.font]);
 
-  const handleFileSelect = async (content: string) => {
-    setIsLoading(true);
-    setError(null);
+  const handleDeploy = async () => {
+    if (!collection) {
+      alert('Cannot deploy without a collection.');
+      return;
+    }
 
+    setIsDeploying(true);
+    setDeploymentResult(null);
+    
     try {
-      const jsonData = JSON.parse(content);
-      const parsedCollection = parsePostmanCollection(jsonData);
-      setCollection(parsedCollection);
-    } catch (err) {
-      setError(
-        "Failed to parse the collection file. Please ensure it's a valid Postman collection JSON."
-      );
-      console.error('Parse error:', err);
+      const response = await fetch('/api/deploy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ collection, customization }),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setDeploymentResult({
+          success: true,
+          url: result.url,
+          message: result.message,
+        });
+        
+        // Show success message with link
+        alert(`✅ ${result.message}\n\nYour documentation is now available at:\n${window.location.origin}${result.url}\n\nClick OK to visit the deployed page.`);
+        
+        // Open the deployed page in a new tab
+        window.open(`${window.location.origin}${result.url}`, '_blank');
+      } else {
+        throw new Error(result.message || 'Deployment failed');
+      }
+    } catch (error) {
+      console.error('Deployment failed:', error);
+      setDeploymentResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Deployment failed. Please try again.',
+      });
+      alert(`❌ Deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      setIsLoading(false);
+      setIsDeploying(false);
     }
-  };
-
-  const handleReset = () => {
-    setCollection(null);
-    setError(null);
-  };
-
-  const handleExport = () => {
-    const configPanel = document.getElementById('config-panel');
-    if (configPanel) configPanel.style.display = 'none';
-
-    if (documentationRef.current) {
-      const content = documentationRef.current.innerHTML;
-      const styles = Array.from(document.styleSheets)
-        .map((styleSheet) => {
-          try {
-            return Array.from(styleSheet.cssRules)
-              .map((rule) => rule.cssText)
-              .join('');
-          } catch (e) {
-            console.warn('Cannot read styles from cross-origin stylesheet.', e);
-            return '';
-          }
-        })
-        .join('');
-
-      const theme = generateColorTheme(customization.accentColor);
-      const customStyles = `
-        :root {
-          --accent: ${theme['--accent']};
-          --accent-light: ${theme['--accent-light']};
-          --accent-foreground: ${theme['--accent-foreground']};
-          --font-family: ${fontFamilies[customization.font]};
-        }
-      `;
-
-      const faviconLink = customization.favicon
-        ? `<link rel="icon" href="${customization.favicon}">`
-        : '';
-      const fontLink = `<link id="font-link" rel="stylesheet" href="${
-        fontLinks[customization.font]
-      }">`;
-
-      const postmanScript = customization.postmanCollectionId
-        ? `
-      <script type="text/javascript">
-        (function (p,o,s,t,m,a,n) {
-          !p[s] && (p[s] = function () { (p[t] || (p[t] = [])).push(arguments); });
-          !o.getElementById(s+t) && o.getElementsByTagName("head")[0].appendChild((
-            (n = o.createElement("script")),
-            (n.id = s+t), (n.async = 1), (n.src = m), n
-          ));
-        }(window, document, "_pm", "PostmanRunObject", "https://run.pstmn.io/button.js"));
-      </script>
-    `
-        : '';
-
-      const html = `
-        <!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${
-              collection?.name || 'API Documentation'
-            } - API Documentation</title>
-            ${faviconLink}
-            ${fontLink}
-            <style>${styles}${customStyles}</style>
-            ${postmanScript}
-          </head>
-          <body>
-            ${content}
-          </body>
-        </html>
-      `;
-
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${
-        collection?.name?.toLowerCase().replace(/\s+/g, '-') ||
-        'api-documentation'
-      }.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-    if (configPanel) configPanel.style.display = 'block';
   };
 
   const styles = {
@@ -198,27 +118,40 @@ export default function Home() {
   return (
     <div
       style={styles}
-      className='min-h-screen bg-white'
+      className='min-h-screen bg-slate-50 max-w-full overflow-x-hidden'
     >
       <Header
         logo={customization.logo}
+        activeView={activeView}
+        onNavigate={setActiveView}
         onCustomizeClick={() => setIsConfigPanelOpen(true)}
-        onExportClick={handleExport}
+        onDeployClick={handleDeploy}
+        isDeploying={isDeploying}
+        onViewDeployedClick={() => setIsDeployedPanelOpen(true)}
         onResetClick={handleReset}
       />
       <div ref={documentationRef}>
-        <DocumentationViewer
-          collection={collection}
-          footerContent={customization.footer}
-          postmanCollectionId={customization.postmanCollectionId}
-          postmanWorkspaceId={customization.postmanWorkspaceId}
-        />
+        {activeView === 'documentation' ? (
+          <DocumentationViewer
+            collection={collection}
+            footerContent={customization.footer}
+            postmanCollectionId={customization.postmanCollectionId}
+            postmanWorkspaceId={customization.postmanWorkspaceId}
+          />
+        ) : (
+          <Flows />
+        )}
       </div>
       {isConfigPanelOpen && (
         <ConfigurationPanel
           customization={customization}
           onCustomizationChange={setCustomization}
           onClose={() => setIsConfigPanelOpen(false)}
+        />
+      )}
+      {isDeployedPanelOpen && (
+        <DeployedPagesPanel
+          onClose={() => setIsDeployedPanelOpen(false)}
         />
       )}
     </div>

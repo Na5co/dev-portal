@@ -8,17 +8,17 @@ export function cn(...inputs: ClassValue[]) {
 export function getMethodColor(method: string) {
   switch (method.toUpperCase()) {
     case 'GET':
-      return 'bg-green-100 text-green-700 border border-green-200';
+      return 'text-green-600';
     case 'POST':
-      return 'bg-blue-100 text-blue-700 border border-blue-200';
+      return 'text-blue-600';
     case 'PUT':
-      return 'bg-yellow-100 text-yellow-700 border border-yellow-200';
+      return 'text-amber-600';
     case 'DELETE':
-      return 'bg-red-100 text-red-700 border border-red-200';
+      return 'text-red-600';
     case 'PATCH':
-      return 'bg-purple-100 text-purple-700 border border-purple-200';
+      return 'text-purple-600';
     default:
-      return 'bg-gray-100 text-gray-700 border border-gray-200';
+      return 'text-gray-600';
   }
 }
 
