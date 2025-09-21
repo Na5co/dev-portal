@@ -18,61 +18,15 @@ const getTransactionHistory = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(history);
 });
 
-const setFraudStatus = catchAsync(async (req, res) => {
-  const { identifier } = req.params;
-  const { status } = req.body;
-  const result = await bankingService.setFraudStatus(identifier, status);
-  res.status(httpStatus.OK).send(result);
-});
-
-const setCreditScore = catchAsync(async (req, res) => {
-  const { identifier } = req.params;
-  const { score } = req.body;
-  const result = await bankingService.setCreditScore(identifier, score);
-  res.status(httpStatus.OK).send(result);
-});
-
 const applyForLoan = catchAsync(async (req, res) => {
   const { identifier } = req.params;
   const result = await bankingService.applyForLoan(identifier, req.body);
   res.status(httpStatus.OK).send(result);
 });
 
-const reviewLoanApplication = catchAsync(async (req, res) => {
-  const { identifier } = req.params;
-  const { decision } = req.body;
-  const result = await bankingService.reviewLoanApplication(identifier, decision);
-  res.status(httpStatus.OK).send(result);
-});
-
-const getLoanApplications = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ['status']);
-  const options = pick(req.query, ['sortBy', 'limit', 'page']);
-  const result = await bankingService.getLoanApplications(filter, options);
-  res.send(result);
-});
-
 const updateUserProfile = catchAsync(async (req, res) => {
   const user = await bankingService.updateUserProfile(req.params.identifier, req.body);
   res.send(user);
-});
-
-const assessRisk = catchAsync(async (req, res) => {
-  const assessment = await bankingService.assessRisk(req.params.identifier);
-  res.send(assessment);
-});
-
-const getRiskAssessments = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ['status']);
-  const options = pick(req.query, ['sortBy', 'limit', 'page']);
-  const result = await bankingService.getRiskAssessments(filter, options);
-  res.send(result);
-});
-
-const getActiveLoans = catchAsync(async (req, res) => {
-  const options = pick(req.query, ['sortBy', 'limit', 'page']);
-  const result = await bankingService.getActiveLoans(options);
-  res.send(result);
 });
 
 const getLoanDecision = catchAsync(async (req, res) => {
@@ -84,14 +38,7 @@ module.exports = {
   getFraudScore,
   getCreditScore,
   getTransactionHistory,
-  setFraudStatus,
-  setCreditScore,
   applyForLoan,
-  reviewLoanApplication,
-  getLoanApplications,
   updateUserProfile,
-  assessRisk,
-  getRiskAssessments,
-  getActiveLoans,
   getLoanDecision,
 };

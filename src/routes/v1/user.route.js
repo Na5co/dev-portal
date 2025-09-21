@@ -107,14 +107,12 @@ module.exports = router;
  *         schema:
  *           type: integer
  *           minimum: 1
- *         default: 10
  *         description: Maximum number of users
  *       - in: query
  *         name: page
  *         schema:
  *           type: integer
  *           minimum: 1
- *           default: 1
  *         description: Page number
  *     responses:
  *       "200":
@@ -148,7 +146,7 @@ module.exports = router;
 
 /**
  * @swagger
- * /users/{id}:
+ * /users/{identifier}:
  *   get:
  *     summary: Get a user
  *     description: Logged in users can fetch only their own user information. Only admins can fetch other users.
@@ -157,7 +155,7 @@ module.exports = router;
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: identifier
  *         required: true
  *         schema:
  *           type: string
@@ -184,7 +182,7 @@ module.exports = router;
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: identifier
  *         required: true
  *         schema:
  *           type: string
@@ -235,7 +233,7 @@ module.exports = router;
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: identifier
  *         required: true
  *         schema:
  *           type: string

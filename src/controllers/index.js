@@ -1,3 +1,15 @@
-module.exports.authController = require('./auth.controller');
-module.exports.userController = require('./user.controller');
-module.exports.bankingController = require('./banking.controller');
+const {
+  authController,
+  userController,
+  bankingController,
+  devController,
+  adminController,
+} = require('../controllers');
+
+module.exports = {
+  authController,
+  userController,
+  bankingController,
+  devController,
+  adminController,
+};

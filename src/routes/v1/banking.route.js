@@ -13,24 +13,15 @@ router
 
 router
   .route('/credit-score/:identifier')
-  .get(auth(), authorizeBanking, validate(bankingValidation.getCreditScore), bankingController.getCreditScore)
-  .post(auth('manageUsers'), authorizeBanking, validate(bankingValidation.setCreditScore), bankingController.setCreditScore);
+  .get(auth(), authorizeBanking, validate(bankingValidation.getCreditScore), bankingController.getCreditScore);
 
 router
   .route('/transaction-history/:identifier')
   .get(auth(), authorizeBanking, validate(bankingValidation.getTransactionHistory), bankingController.getTransactionHistory);
 
 router
-  .route('/fraud-status/:identifier')
-  .post(auth('manageUsers'), authorizeBanking, validate(bankingValidation.setFraudStatus), bankingController.setFraudStatus);
-
-router
   .route('/loan-application/:identifier')
   .post(auth(), authorizeBanking, validate(bankingValidation.applyForLoan), bankingController.applyForLoan);
-
-router
-  .route('/loan-application/:identifier/review')
-  .patch(auth('manageUsers'), authorizeBanking, validate(bankingValidation.reviewLoanApplication), bankingController.reviewLoanApplication);
 
 router
   .route('/profile/:identifier')
@@ -39,22 +30,6 @@ router
 router
   .route('/loan-decision/:identifier')
   .get(auth(), authorizeBanking, validate(bankingValidation.getLoanDecision), bankingController.getLoanDecision);
-
-router
-  .route('/risk-assessment/:identifier')
-  .post(auth('manageUsers'), authorizeBanking, validate(bankingValidation.assessRisk), bankingController.assessRisk);
-
-// Admin-only bulk routes (do not need authorizeBanking middleware)
-router
-  .route('/loan-applications')
-  .get(auth('getLoanApplications'), validate(bankingValidation.getLoanApplications), bankingController.getLoanApplications);
-router
-  .route('/assessments')
-  .get(auth('manageUsers'), validate(bankingValidation.getRiskAssessments), bankingController.getRiskAssessments);
-
-router
-  .route('/loans/active')
-  .get(auth('manageUsers'), validate(bankingValidation.getActiveLoans), bankingController.getActiveLoans);
 
 module.exports = router;
 
@@ -67,7 +42,7 @@ module.exports = router;
 
 /**
  * @swagger
- * /banking/fraud-detection/{identifier}:
+ * /banking/fraud-score/{identifier}:
  *   get:
  *     summary: Get fraud score for a user
  *     tags: [Banking]
@@ -85,44 +60,6 @@ module.exports = router;
  *         description: OK
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
- *       "404":
- *         $ref: '#/components/responses/NotFound'
- */
-
-/**
- * @swagger
- * /banking/fraud-detection/{identifier}:
- *   patch:
- *     summary: Set fraud status for a user
- *     tags: [Banking]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: identifier
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID or Email
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               status:
- *                 type: string
- *                 enum: [fraud, not_fraud]
- *             example:
- *               status: fraud
- *     responses:
- *       "200":
- *         description: OK
- *       "401":
- *         $ref: '#/components/responses/Unauthorized'
- *       "403":
- *         $ref: '#/components/responses/Forbidden'
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
@@ -147,43 +84,6 @@ module.exports = router;
  *         description: OK
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
- *       "404":
- *         $ref: '#/components/responses/NotFound'
- */
-
-/**
- * @swagger
- * /banking/credit-score/{identifier}:
- *   patch:
- *     summary: Set credit score for a user
- *     tags: [Banking]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: identifier
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID or Email
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               score:
- *                 type: number
- *             example:
- *               score: 750
- *     responses:
- *       "200":
- *         description: OK
- *       "401":
- *         $ref: '#/components/responses/Unauthorized'
- *       "403":
- *         $ref: '#/components/responses/Forbidden'
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
@@ -249,91 +149,7 @@ module.exports = router;
 
 /**
  * @swagger
- * /banking/loan-application/{identifier}/review:
- *   patch:
- *     summary: Review a loan application (Admin)
- *     description: Allows an admin to approve or decline a loan application that is pending review.
- *     tags: [Banking]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: identifier
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID or Email
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               decision:
- *                 type: string
- *                 enum: [approved, declined]
- *                 description: The decision on the loan application.
- *             example:
- *               decision: "approved"
- *     responses:
- *       "200":
- *         description: OK. The loan application status has been updated.
- *       "401":
- *         $ref: '#/components/responses/Unauthorized'
- *       "403":
- *         $ref: '#/components/responses/Forbidden'
- *       "404":
- *         $ref: '#/components/responses/NotFound'
- */
-
-/**
- * @swagger
- * /banking/loan-applications:
- *   get:
- *     summary: Get all loan applications (Admin)
- *     description: Allows an admin to retrieve all loan applications, with options for filtering and pagination.
- *     tags: [Banking]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [pending_review, approved, declined]
- *         description: Filter applications by their status.
- *       - in: query
- *         name: sortBy
- *         schema:
- *           type: string
- *         description: Sort by query in the form of field:desc/asc (ex. name:asc).
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *         default: 10
- *         description: Maximum number of applications.
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number.
- *     responses:
- *       "200":
- *         description: OK. A list of loan applications.
- *       "401":
- *         $ref: '#/components/responses/Unauthorized'
- *       "403":
- *         $ref: '#/components/responses/Forbidden'
- */
-
-/**
- * @swagger
- * /banking/users/{identifier}/profile:
+ * /banking/profile/{identifier}:
  *   put:
  *     summary: Update a user's financial profile
  *     description: Allows a user to submit or update their detailed personal and financial information.
@@ -390,10 +206,9 @@ module.exports = router;
 
 /**
  * @swagger
- * /banking/users/{identifier}/assess-risk:
- *   post:
- *     summary: Assess the financial risk of a user (Admin)
- *     description: Allows an admin to trigger a financial risk assessment for a specific user. This must be done before a user can apply for a loan.
+ * /banking/loan-decision/{identifier}:
+ *   get:
+ *     summary: Get loan decision for a user
  *     tags: [Banking]
  *     security:
  *       - bearerAuth: []
@@ -406,25 +221,9 @@ module.exports = router;
  *         description: User ID or Email
  *     responses:
  *       "200":
- *         description: OK. The risk assessment has been completed.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 userId: { type: string }
- *                 riskLevel: { type: string, enum: [low, medium, high] }
- *                 recommendation: { type: string, enum: [proceed, proceed_with_caution, deny] }
- *                 assessment:
- *                   type: object
- *                   properties:
- *                     creditScoreCheck: { type: string }
- *                     dtiRatioCheck: { type: string }
- *                     fraudFlags: { type: "array", items: { type: "string" } }
+ *         description: OK
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
- *       "403":
- *         $ref: '#/components/responses/Forbidden'
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */

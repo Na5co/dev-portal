@@ -1,4 +1,12 @@
 module.exports.customValidation = require('./custom.validation');
-module.exports.authValidation = require('./auth.validation');
-module.exports.userValidation = require('./user.validation');
-module.exports.bankingValidation = require('./banking.validation');
+const authValidation = require('./auth.validation');
+const userValidation = require('./user.validation');
+const bankingValidation = require('./banking.validation');
+const adminValidation = require('./admin.validation');
+
+module.exports = {
+  authValidation,
+  userValidation,
+  bankingValidation,
+  adminValidation,
+};
