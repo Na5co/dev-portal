@@ -26,6 +26,10 @@ const defaultRoutes = [
     path: '/admin',
     route: adminRoute,
   },
+  {
+    path: '/dev',
+    route: devRoute,
+  },
 ];
 
 const devRoutes = [
@@ -33,10 +37,6 @@ const devRoutes = [
   {
     path: '/docs',
     route: docsRoute,
-  },
-  {
-    path: '/dev',
-    route: devRoute,
   },
 ];
 
